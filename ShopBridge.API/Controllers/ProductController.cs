@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using ShopBridge.API.Model;
 using ShopBridge.API.Services;
 using ShopBridge.Entities;
 using System;
@@ -49,10 +50,21 @@ namespace ShopBridge.API.Controllers
                     response.status = false;
                     return BadRequest(response);
                 }
-                product = _productService.AddOrEditProduct(productEntity).GetAwaiter().GetResult();
-                response.status = true;
-                response.data = product;
-                return Ok(response);    
+                Dictionary<string, string> validations = IsValidRequest.IsValid(productEntity);
+                if (validations.Count == 0)
+                {
+                    product = _productService.AddOrEditProduct(productEntity).GetAwaiter().GetResult();
+                    response.status = true;
+                    response.data = product;
+                    return Ok(response);
+                }
+                else
+                {
+                    response.status = false;
+                    response.errors = validations;
+                    return BadRequest(response);
+                }
+                    
             }
             catch (Exception ex)
             {
@@ -71,20 +83,24 @@ namespace ShopBridge.API.Controllers
                 if (string.IsNullOrEmpty(productId))
                 {
                     response.status = false;
-                    response.errors = new List<string>();
-                    response.errors.Add("productId should not be null or empty.");
+                    response.errors = new Dictionary<string, string>();
+                    response.errors.Add("productId", "productId should not be null or empty.");
                     return BadRequest(response);
                 }
-                product = _productService.DeleteProduct(productId).GetAwaiter().GetResult();
-                if (product != null)
+                Guid result;
+                if (Guid.TryParse(productId, out result))
                 {
-                    response.status = true;
-                    response.data = product;
-                    return Ok(response);
-                }
+                    product = _productService.DeleteProduct(productId).GetAwaiter().GetResult();
+                    if (product != null)
+                    {
+                        response.status = true;
+                        response.data = product;
+                        return Ok(response);
+                    }
+                }               
                 response.status = false;
-                response.errors = new List<string>();
-                response.errors.Add("Record not found for Product Id:" + productId);
+                response.errors = new Dictionary<string, string>();
+                response.errors.Add("productId", "Record not found for Product Id:" + productId);
                 return NotFound(response);
                 
             }

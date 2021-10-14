@@ -10,6 +10,6 @@ namespace ShopBridge.Entities
     {
         public bool status { get; set; }
         public object data { get; set; }
-        public List<string> errors { get; set; }
+        public Dictionary<string,string> errors { get; set; }
     }
 }
